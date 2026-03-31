@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Ecclesia – Sistema Administrativo</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background: #1976d2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: 0.2s;
+            border-left: 6px solid #1976d2;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            background: #f0f7ff;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .card p {
+            color: #444;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            margin: 40px 0 20px;
+            color: #777;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    Ecclesia – Sistema Administrativo
+</header>
+
+<!-- 🔐 PROTEÇÃO DE LOGIN (OBRIGATÓRIA) -->
+<script>
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    if (!usuario) {
+        location.href = "login.html";
+    }
+</script>
+
+<div class="container">
+
+    <!-- ✅ TODOS -->
+    <div class="card" data-perfis="MASTER,SEDE,FILIAL" onclick="location.href='pessoa.html'">
+        <h3>👤 Cadastro de Pessoas</h3>
+        <p>Cadastrar e gerenciar membros, líderes e responsáveis das igrejas.</p>
+    </div>
+
+    <!-- ✅ SOMENTE MASTER -->
+    <div class="card" data-perfis="MASTER" onclick="location.href='cadastro-catedral.html'">
+        <h3>⛪ Cadastro de Catedral</h3>
+        <p>Cadastrar sede administrativa e igrejas matrizes.</p>
+    </div>
+
+    <!-- ✅ MASTER e SEDE -->
+    <div class="card" data-perfis="MASTER,SEDE" onclick="location.href='cadastro-filial.html'">
+        <h3>🏠 Cadastro de Filial</h3>
+        <p>Cadastrar paróquias, missões e comunidades vinculadas à catedral.</p>
+    </div>
+
+    <!-- ✅ MASTER e SEDE -->
+    <div class="card" data-perfis="MASTER,SEDE" onclick="location.href='admin-aprovacoes.html'">
+        <h3>✅ Aprovação de Usuários</h3>
+        <p>Aprovar solicitações de acesso e iniciar o cadastro institucional.</p>
+    </div>
+
+    <!-- ✅ MASTER e SEDE -->
+    <div class="card" data-perfis="MASTER,SEDE" onclick="location.href='usuarios.html'">
+        <h3>🔑 Usuários e Acessos</h3>
+        <p>Gerenciar logins, permissões e finalizar cadastro de usuários e pessoas.</p>
+    </div>
+
+    <!-- ✅ TODOS -->
+    <div class="card" data-perfis="MASTER,SEDE,FILIAL" onclick="location.href='relatorios.html'">
+        <h3>📊 Relatórios e BI</h3>
+        <p>Visualizar indicadores, gráficos e dados consolidados.</p>
+    </div>
+
+    <!-- ✅ TODOS (LEGADO) -->
+    <div class="card" data-perfis="MASTER,SEDE,FILIAL" onclick="location.href='cadastro.html'">
+        <h3>📋 Cadastro Geral</h3>
+        <p>Tela de cadastro genérica ou legado (se aplicável).</p>
+    </div>
+
+</div>
+
+<footer>
+    © 2026 – Ecclesia
+</footer>
+
+<script>
+    // 🔐 CONTROLE DE VISIBILIDADE POR PERFIL
+    const perfil = usuario.perfil;
+
+    document.querySelectorAll(".card").forEach(card => {
+        const permitidos = card.dataset.perfis.split(",");
+        if (!permitidos.includes(perfil)) {
+            card.style.display = "none";
+        }
+    });
+</script>
+
+</body>
+</html>

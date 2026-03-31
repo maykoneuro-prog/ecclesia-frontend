@@ -1,0 +1,246 @@
+<script>
+    const usuarioLogado = JSON.parse(localStorage.getItem("usuario"));
+
+    if (!usuarioLogado) {
+        location.href = "login.html";
+    }
+</script>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatórios e Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .topo {
+            background: #1976d2;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-voltar {
+            background: white;
+            color: #1976d2;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        /* FILTROS */
+        .filtros {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 6px;
+            font-size: 13px;
+        }
+
+        /* RESUMO */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card-resumo {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card-resumo h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .card-resumo span {
+            font-size: 26px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        /* GRÁFICOS */
+        .graficos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .grafico-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="topo">
+    <a class="btn-voltar" href="home.html">← Voltar</a>
+    <span>Relatórios e Dashboard</span>
+</header>
+
+<div class="container">
+
+    <!-- FILTROS -->
+    <div class="filtros">
+        <strong>Nível:</strong>
+        <select id="nivel" onchange="aplicarFiltro()">
+            <option value="GERAL">Geral</option>
+            <option value="CATEDRAL">Catedral</option>
+        </select>
+
+        <div id="filtroCatedral" style="display:none;">
+            <strong>Catedral:</strong>
+            <select id="catedral" onchange="aplicarFiltro()"></select>
+        </div>
+    </div>
+
+    <!-- RESUMO -->
+    <div class="cards">
+        <div class="card-resumo"><h3>Total de Pessoas</h3><span id="totalPessoas">0</span></div>
+        <div class="card-resumo"><h3>Pessoas Ativas</h3><span id="pessoasAtivas">0</span></div>
+        <div class="card-resumo"><h3>Pessoas Inativas</h3><span id="pessoasInativas">0</span></div>
+        <div class="card-resumo"><h3>Dioceses</h3><span id="totalDioceses">0</span></div>
+        <div class="card-resumo"><h3>Paróquias</h3><span id="totalParoquias">0</span></div>
+        <div class="card-resumo"><h3>Bispos</h3><span id="totalBispos">0</span></div>
+        <div class="card-resumo"><h3>Pastores</h3><span id="totalPastores">0</span></div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="graficos">
+        <div class="grafico-box">
+            <h3>Status das Pessoas</h3>
+            <canvas id="graficoStatus"></canvas>
+        </div>
+
+        <div class="grafico-box">
+            <h3>Pessoas por Igreja</h3>
+            <canvas id="graficoIgrejas"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let pessoas = [];
+    let igrejas = [];
+    let graficoStatus, graficoIgrejas;
+
+    Promise.all([
+        fetch("http://localhost:8080/pessoas").then(r => r.json()),
+        fetch("http://localhost:8080/igrejas").then(r => r.json())
+    ]).then(([p, i]) => {
+        pessoas = p;
+        igrejas = i;
+        carregarCatedrais();
+        aplicarFiltro();
+    });
+
+    function carregarCatedrais() {
+        catedral.innerHTML = "";
+        igrejas.filter(i => i.tipo === "SEDE").forEach(i => {
+            const o = document.createElement("option");
+            o.value = i.id;
+            o.textContent = i.nome;
+            catedral.appendChild(o);
+        });
+    }
+
+    function aplicarFiltro() {
+        const nivelSelecionado = nivel.value;
+        filtroCatedral.style.display = nivelSelecionado === "CATEDRAL" ? "block" : "none";
+
+        let igrejasFiltradas = igrejas;
+        let pessoasFiltradas = pessoas;
+
+        if (nivelSelecionado === "CATEDRAL") {
+            const idCat = catedral.value;
+            const relacionadas = igrejas.filter(i => i.id == idCat || i.igrejaPai?.id == idCat);
+            const ids = relacionadas.map(i => i.id);
+            igrejasFiltradas = relacionadas;
+            pessoasFiltradas = pessoas.filter(p => ids.includes(p.igrejaId));
+        }
+
+        montarResumo(igrejasFiltradas, pessoasFiltradas);
+        montarGraficos(igrejasFiltradas, pessoasFiltradas);
+    }
+
+    function montarResumo(i, p) {
+        totalPessoas.textContent = p.length;
+        pessoasAtivas.textContent = p.filter(x => x.ativo).length;
+        pessoasInativas.textContent = p.filter(x => !x.ativo).length;
+        totalDioceses.textContent = i.filter(x => x.tipo === "SEDE").length;
+        totalParoquias.textContent = i.filter(x => x.tipo === "PAROQUIA").length;
+
+        totalBispos.textContent = new Set(i.filter(x => x.tipo === "SEDE").map(x => x.responsavel?.id).filter(Boolean)).size;
+        totalPastores.textContent = new Set(i.filter(x => x.tipo !== "SEDE").map(x => x.responsavel?.id).filter(Boolean)).size;
+    }
+
+    function montarGraficos(i, p) {
+        if (graficoStatus) graficoStatus.destroy();
+        if (graficoIgrejas) graficoIgrejas.destroy();
+
+        graficoStatus = new Chart(graficoStatus = document.getElementById("graficoStatus"), {
+            type: "pie",
+            data: {
+                labels: ["Ativos", "Inativos"],
+                datasets: [{ data: [p.filter(x => x.ativo).length, p.filter(x => !x.ativo).length], backgroundColor: ["#1976d2", "#ccc"] }]
+            }
+        });
+
+        const mapa = {};
+        p.forEach(x => mapa[x.igrejaId] = (mapa[x.igrejaId] || 0) + 1);
+
+        graficoIgrejas = new Chart(document.getElementById("graficoIgrejas"), {
+            type: "bar",
+            data: {
+                labels: Object.keys(mapa).map(id => i.find(x => x.id == id)?.nome || "Sem Igreja"),
+                datasets: [{ data: Object.values(mapa), backgroundColor: "#1976d2" }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+    }
+</script>
+
+</body>
+</html>

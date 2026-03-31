@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin – Aprovação de Usuários</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            margin: 0;
+        }
+
+        .topo {
+            background: #1976d2;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 20px;
+        }
+
+        .btn-voltar {
+            background: white;
+            color: #1976d2;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        select, input {
+            padding: 5px;
+            width: 100%;
+        }
+
+        button {
+            padding: 6px 10px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #125ea7;
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+<header class="topo">
+    <a class="btn-voltar" href="home.html">← Home</a>
+    <span>Aprovação de Usuários</span>
+</header>
+
+<div class="container">
+
+    <table>
+        <thead>
+        <tr>
+            <th>Email</th>
+            <th>Perfil do Usuário</th>
+            <th>Nome da Pessoa</th>
+            <th>Tipo da Pessoa</th>
+            <th>Ação</th>
+        </tr>
+        </thead>
+        <tbody id="tabelaUsuarios"></tbody>
+    </table>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", carregar);
+
+    function carregar() {
+        fetch("/admin/usuarios/pendentes")
+            .then(r => r.json())
+            .then(usuarios => montarTabela(usuarios));
+    }
+
+    function montarTabela(usuarios) {
+        const tbody = document.getElementById("tabelaUsuarios");
+        tbody.innerHTML = "";
+
+        if (usuarios.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5'>Nenhum usuário pendente.</td></tr>";
+            return;
+        }
+
+        usuarios.forEach(u => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${u.email}</td>
+
+                    <td>
+                        <select id="perfil-${u.id}">
+                            <option value="">Selecione</option>
+                            <option value="MASTER">MASTER</option>
+                            <option value="SEDE">SEDE</option>
+                            <option value="FILIAL">FILIAL</option>
+                        </select>
+                    </td>
+
+                    <td>
+                        <input id="nome-${u.id}" placeholder="Nome completo">
+                    </td>
+
+                    <td>
+                        <select id="tipo-${u.id}">
+                            <option value="">Selecione</option>
+                            <option value="MEMBRO">MEMBRO</option>
+                            <option value="PASTOR">PASTOR</option>
+                            <option value="BISPO">BISPO</option>
+                            <option value="CLERO">CLERO</option>
+                            <option value="VISITANTE">VISITANTE</option>
+                        </select>
+                    </td>
+
+                    <td>
+                        <button onclick="aprovar(${u.id}, '${u.email}')">Aprovar</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function aprovar(id, email) {
+        const perfil = document.getElementById(`perfil-${id}`).value;
+        const nome = document.getElementById(`nome-${id}`).value;
+        const tipo = document.getElementById(`tipo-${id}`).value;
+
+        if (!perfil || !nome || !tipo) {
+            alert("Preencha todos os campos");
+            return;
+        }
+
+        fetch(`/admin/aprovacoes/${id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                perfilUsuario: perfil,
+                nome: nome,
+                email: email,
+                tipoPessoa: tipo
+            })
+        }).then(() => carregar());
+    }
+</script>
+
+</body>
+</html>
