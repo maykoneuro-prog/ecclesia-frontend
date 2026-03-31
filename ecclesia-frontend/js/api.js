@@ -1,1 +1,0 @@
-const API_URL = "https://ecclesia-api.onrender.com";
